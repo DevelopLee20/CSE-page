@@ -356,3 +356,90 @@ localhost:port/student/10
 > 위의 코드 대로 코딩 후 url에 접근하면 쿼리 매개변수를 사용할 수 있다.
 
 ---
+
+## FastAPI Docs - 요청 본문
+
+### 요청 본문이란?
+
+- 클라이언트가 API로 데이터를 보내야 할 때 보내는 본문
+- 반대로 ***응답 본문***은 API가 클라이언트로 보내는 데이터
+- 요청 본문 선언을 위해 ***Pydantic***을 사용함
+
+### Pydantic의 BaseModel
+
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel ####
+
+
+class Item(BaseModel): ####
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+
+
+app = FastAPI()
+
+
+@app.post("/items/")
+async def create_item(item: Item):
+    return item
+```
+
+> 위의 모델은 아래의 JSON을 통해 작업 가능 또한 Doc, ReDoc을 통한 자동 문서화 제공
+
+- 모든 속성을 포함시킬 때
+
+```json
+{
+    "name": "Foo",
+    "description": "선택적인 설명란",
+    "price": 45.2,
+    "tax": 3.5
+}
+```
+
+- None 타입이 허용된 속성은 제외할 때
+
+```json
+{
+    "name": "Foo",
+    "price": 45.2
+}
+```
+
+### 요청 본문 + 경로 + 쿼리 매개변수
+
+```python
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+
+class Item(BaseModel):
+    name: str
+    description: str | None = None
+    price: float
+    tax: float | None = None
+
+
+app = FastAPI()
+
+
+@app.put("/items/{item_id}")
+async def update_item(item_id: int, item: Item, q: str | None = None):
+    result = {"item_id": item_id, **item.dict()}
+    if q:
+        result.update({"q": q})
+    return result
+```
+
+> ***본문***, ***경로*** 그리고 ***쿼리 매개변수*** 모두 동시에 선언할 수 있음
+
+- item_id: 경로로 사용
+- item: 요청 본문
+- q: 쿼리 매개변수
+
+> Pydantic없이 Body 다중 매개변수를 사용할 수 있음
+
+## FastAPI Docs - 쿼리 매개변수와 문자열 검증
